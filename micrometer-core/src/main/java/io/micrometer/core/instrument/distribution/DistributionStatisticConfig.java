@@ -42,6 +42,7 @@ public class DistributionStatisticConfig implements Mergeable<DistributionStatis
         .minimumExpectedValue(1.0)
         .maximumExpectedValue(Double.POSITIVE_INFINITY)
         .expiry(Duration.ofMinutes(2))
+        // 默认长度为3
         .bufferLength(3)
         .build();
 

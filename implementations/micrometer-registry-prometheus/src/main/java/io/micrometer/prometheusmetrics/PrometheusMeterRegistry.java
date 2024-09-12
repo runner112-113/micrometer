@@ -210,11 +210,14 @@ public class PrometheusMeterRegistry extends MeterRegistry {
         applyToCollector(id, (collector) -> {
             List<String> tagValues = tagValues(id);
             collector.add(tagValues,
-                    (conventionName,
-                            tagKeys) -> Stream.of(new MicrometerCollector.Family<>(conventionName,
-                                    family -> new CounterSnapshot(family.metadata, family.dataPointSnapshots),
-                                    getMetadata(conventionName, id.getDescription()), new CounterDataPointSnapshot(
-                                            counter.count(), Labels.of(tagKeys, tagValues), counter.exemplar(), 0))));
+                    // 采样的逻辑
+                    (conventionName, tagKeys) -> Stream.of(
+                            // MicrometerCollector.Family表示一个 Prometheus 收集器的度量家族
+                                    new MicrometerCollector.Family<>(conventionName, family -> new CounterSnapshot(family.metadata, family.dataPointSnapshots),
+                                    getMetadata(conventionName, id.getDescription()),
+                                    // 采集的详细信息
+                                    new CounterDataPointSnapshot(counter.count(), Labels.of(tagKeys, tagValues), counter.exemplar(), 0))
+                    ));
         });
         return counter;
     }
@@ -566,10 +569,13 @@ public class PrometheusMeterRegistry extends MeterRegistry {
     }
 
     private void applyToCollector(Meter.Id id, Consumer<MicrometerCollector> consumer) {
+        // 通过名称来获取Collector进行操作
         collectorMap.compute(getConventionName(id), (name, existingCollector) -> {
+            // 不存在就进行注册
             if (existingCollector == null) {
                 MicrometerCollector micrometerCollector = new MicrometerCollector(name, id,
                         config().namingConvention());
+                // 添加到collector
                 consumer.accept(micrometerCollector);
                 registry.register(micrometerCollector);
                 return micrometerCollector;

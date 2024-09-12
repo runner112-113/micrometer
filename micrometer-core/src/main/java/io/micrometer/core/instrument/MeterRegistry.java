@@ -599,6 +599,7 @@ public abstract class MeterRegistry {
     private <M extends Meter> M registerMeterIfNecessary(Class<M> meterClass, Meter.Id id,
             @Nullable DistributionStatisticConfig config, BiFunction<Meter.Id, DistributionStatisticConfig, M> builder,
             Function<Meter.Id, M> noopBuilder) {
+        // 创建Meter
         Meter m = getOrCreateMeter(config, builder, id, noopBuilder);
 
         if (!meterClass.isInstance(m)) {
@@ -614,6 +615,7 @@ public abstract class MeterRegistry {
             return id;
         }
         Id mappedId = id;
+        // 通过MeterFilters对mappedId做映射
         for (MeterFilter filter : filters) {
             mappedId = filter.map(mappedId);
         }
@@ -640,6 +642,7 @@ public abstract class MeterRegistry {
             }
         }
         else {
+            // 判断MeterRegistry是否close
             if (isClosed()) {
                 return noopBuilder.apply(mappedId);
             }
@@ -648,10 +651,12 @@ public abstract class MeterRegistry {
                 m = meterMap.get(mappedId);
 
                 if (m == null) {
+                    // 通过MeterFilters的accept方法判断是否注册
                     if (!accept(mappedId)) {
                         return noopBuilder.apply(mappedId);
                     }
 
+                    // filtering new timers and distribution summaries
                     if (config != null) {
                         for (MeterFilter filter : filters) {
                             DistributionStatisticConfig filteredConfig = filter.configure(mappedId, config);
@@ -661,6 +666,7 @@ public abstract class MeterRegistry {
                         }
                     }
 
+                    // 构建Meter
                     m = builder.apply(mappedId, config);
 
                     Id synAssoc = mappedId.syntheticAssociation();
@@ -669,9 +675,11 @@ public abstract class MeterRegistry {
                         associations.add(mappedId);
                     }
 
+                    // 触发meterAddedListeners
                     for (Consumer<Meter> onAdd : meterAddedListeners) {
                         onAdd.accept(m);
                     }
+                    // 加入缓存meterMap
                     meterMap.put(mappedId, m);
                     preFilterIdToMeterMap.put(originalId, m);
                     unmarkStaleId(originalId);

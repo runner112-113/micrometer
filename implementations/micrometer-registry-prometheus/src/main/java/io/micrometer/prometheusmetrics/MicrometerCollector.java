@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
+
 /**
  * {@link MultiCollector} for Micrometer.
  *
@@ -40,7 +41,7 @@ import static java.util.stream.Collectors.toList;
  */
 class MicrometerCollector implements MultiCollector {
 
-    private final Map<List<String>, Child> children = new ConcurrentHashMap<>();
+    private final Map<List<String>/*tags*/, Child/*采样的samples逻辑*/> children = new ConcurrentHashMap<>();
 
     private final String conventionName;
 
@@ -75,15 +76,15 @@ class MicrometerCollector implements MultiCollector {
 
         for (Child child : children.values()) {
             child.samples(conventionName, tagKeys)
-                .forEach(family -> families.compute(family.getConventionName(),
-                        (name, matchingFamily) -> matchingFamily != null
-                                ? matchingFamily.addSamples(family.dataPointSnapshots) : family));
+                    .forEach(family -> families.compute(family.getConventionName(),
+                            (name, matchingFamily) -> matchingFamily != null
+                                    ? matchingFamily.addSamples(family.dataPointSnapshots) : family));
         }
 
         Collection<MetricSnapshot> metricSnapshots = families.values()
-            .stream()
-            .map(Family::toMetricSnapshot)
-            .collect(toList());
+                .stream()
+                .map(Family::toMetricSnapshot)
+                .collect(toList());
 
         return new MetricSnapshots(metricSnapshots);
     }
@@ -105,7 +106,7 @@ class MicrometerCollector implements MultiCollector {
         final Function<Family<T>, MetricSnapshot> metricSnapshotFactory;
 
         Family(String conventionName, Function<Family<T>, MetricSnapshot> metricSnapshotFactory,
-                MetricMetadata metadata, T... dataPointSnapshots) {
+               MetricMetadata metadata, T... dataPointSnapshots) {
             this.conventionName = conventionName;
             this.metricSnapshotFactory = metricSnapshotFactory;
             this.metadata = metadata;

@@ -62,6 +62,9 @@ public class PrometheusCounter extends AbstractMeter implements Counter {
         return count.doubleValue();
     }
 
+    /**
+     * Exemplar 是 Prometheus 中用于在直方图或摘要中附加的特定样本值，可以帮助识别并分析特定的请求或数据点
+     */
     @Nullable
     Exemplar exemplar() {
         return exemplarSampler != null ? exemplarSampler.collect().getLatest() : null;
